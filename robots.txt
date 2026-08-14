@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://leandrodriguez.me/sitemap.xml 
+Sitemap: https://leandrollosa.com/sitemap.xml 
