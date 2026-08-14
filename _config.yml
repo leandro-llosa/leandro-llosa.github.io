@@ -59,5 +59,5 @@ exclude:
   - .env
   - .env.*
   - vendor/
-  - leandrodriguez.me/
+  - leandrollosa.com/
   - prompt.txt
