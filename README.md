@@ -40,7 +40,7 @@ Duplicate the Notion workspace template *(link)*, which gives you both databases
 | `Show in Nav` | Checkbox | Whether to appear in the header nav |
 | `Status` | Select | `Draft` or `Published` |
 | `Description` | Text | Optional meta description |
-| `Name` | Text | Your display name shown on the home page (home type only) |
+| `Name` | Text | Your display name — shown on the home page, and used for the browser tab title and RSS feed (home type only) |
 | `Profile Picture` | Text | External image URL — home page only |
 | `Tagline` | Text | One-line bio — home page only |
 | `Social Links` | Text | One `Name: URL` per line — home page only |
@@ -92,12 +92,14 @@ https://www.notion.so/yourworkspace/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?v=...
 Edit `_config.yml` and update at minimum:
 
 ```yaml
-title: "Your Name"
 url: "https://username.github.io"
 author:
-  name: "Your Name"
   email: "you@example.com"
 ```
+
+`title:` and `author.name` are set for you: every sync points them at the `Name`
+property of the home page in your Pages database, so the browser tab title and the
+RSS feed follow whatever you call yourself in Notion. Change your name there, not here.
 
 ### Step 6 — Enable GitHub Pages
 

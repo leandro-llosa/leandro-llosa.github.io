@@ -37,7 +37,9 @@ Properties read by the sync script:
 - `Show in Nav` (Checkbox) — whether to include in the navbar
 - `Status` (Select) — must be `Published` to sync
 - `Description` (Text) — optional meta description
-- `Name` (Text) — display name shown on the home page (home type only); falls back to `Title` if not set
+- `Name` (Text) — display name shown on the home page (home type only); falls back to `Title` if not set.
+  Also written into `_config.yml` as `title` and `author.name`, which is what jekyll-seo-tag
+  and jekyll-feed use for the browser tab title, the feed title and the feed author
 - `Profile Picture` (Text) — external image URL, used by the `home` type
 - `Tagline` (Text) — one-liner bio, used by the `home` type
 - `Social Links` (Text) — newline-separated `Name: URL` pairs, used by the `home` type
@@ -64,6 +66,7 @@ Adding a new type: add a case in `typeToLayout()` in `scripts/sync-notion.js` an
 | File | Generated from |
 |---|---|
 | `_data/home.yml` | The `home` type page in Pages database |
+| `_config.yml` (`title`, `author.name` only) | The `Name` property of the `home` type page |
 | `_data/nav.yml` | All Pages with `Show in Nav: true`, sorted by `Nav Order` |
 | `_pages/{slug}.md` | Each non-home published page in Pages database |
 | `_posts/{date}-{slug}.md` | Each published post in Posts database |
@@ -150,7 +153,10 @@ Layout: `.site-header`, `.header-inner`, `.site-logo`, `.site-nav`, `.main`, `.c
 1. Reads existing `_pages/*.md`, builds `notionIdToFile` map from `notion_id:` front matter
 2. Fetches all Published pages from `NOTION_PAGES_DATABASE_ID`
 3. For each page: extracts metadata, fetches blocks, converts to Markdown
-4. If `type === 'home'`: accumulates profile data, writes `_data/home.yml`
+4. If `type === 'home'`: accumulates profile data, writes `_data/home.yml`, and calls
+   `syncConfigIdentity()` to point `_config.yml`'s `title` / `author.name` at the `Name`.
+   That file is edited line by line, not YAML round-tripped, so its comments and ordering
+   survive; unrecognised shapes are left alone and warned about
 5. Otherwise: writes `_pages/{slug}.md` with appropriate layout front matter
 6. Removes `_pages/*.md` files whose Notion pages are no longer Published — via
    `applyDeletions()`, which aborts the whole sync (exit 1, nothing committed) if the
@@ -228,7 +234,7 @@ Jekyll serves at `http://localhost:4000` by default.
 
 `.github/workflows/sync-notion.yml`:
 - Trigger: cron `*/10 * * * *` + manual `workflow_dispatch`
-- Steps: checkout → Node 20 → `npm install` → run sync → `git add _posts/ _pages/ _data/` → commit + push if changed
+- Steps: checkout → Node 20 → `npm install` → run sync → `git add _posts/ _pages/ _data/ _config.yml` → commit + push if changed
 - Required secrets: `NOTION_TOKEN` + (`NOTION_PAGES_DATABASE_ID` and/or `NOTION_POSTS_DATABASE_ID`)
 - Legacy: `NOTION_DATABASE_ID` still works as a posts-only fallback
 
@@ -241,6 +247,8 @@ Jekyll serves at `http://localhost:4000` by default.
 - **Notion image URLs expire** — always use external URLs for profile pictures and cover images. Warn users in docs.
 - **`_pages/` and `_posts/` are managed by sync** — never edit these manually; changes will be overwritten.
 - **`_data/home.yml` and `_data/nav.yml` are managed by sync** — same rule.
+- **`_config.yml` is hand-maintained except `title` and `author.name`** — those two track the
+  home page's `Name` on every sync. Everything else in the file is yours; edit it freely.
 - **The sync refuses suspicious bulk deletes** — if a run would delete more than
   `MAX_DELETE_RATIO` (default 0.5) of the tracked files in `_pages/` or `_posts/`, or if
   Notion returns zero published rows, the sync aborts with exit 1 and commits nothing.

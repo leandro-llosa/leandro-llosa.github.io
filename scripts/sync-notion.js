@@ -321,6 +321,65 @@ function buildHomeYaml(data) {
   return lines.join('\n') + '\n';
 }
 
+// ─── Site identity → _config.yml ──────────────────────────────────────────────
+
+/**
+ * Point _config.yml's `title` and `author.name` at the home page's Name.
+ *
+ * jekyll-seo-tag builds the browser tab title from `site.title`, and jekyll-feed
+ * takes the feed title and author from `site.title` / `site.author.name`. None of
+ * those can read a data file, so the Name has to land in _config.yml for the tab
+ * and the feed to follow Notion.
+ *
+ * Edited line by line rather than parsed and re-emitted: _config.yml is otherwise
+ * hand-maintained, and a YAML round-trip would drop its comments and ordering.
+ * Anything unrecognised is left alone and reported.
+ */
+function syncConfigIdentity(name) {
+  if (!name) return;
+
+  const configPath = path.join(ROOT_DIR, '_config.yml');
+  let original;
+  try {
+    original = fs.readFileSync(configPath, 'utf8');
+  } catch {
+    console.warn('   Warning: _config.yml not readable — site title left unchanged.');
+    return;
+  }
+
+  let inAuthor    = false;
+  let sawTitle    = false;
+  let sawAuthorName = false;
+
+  const updated = original.split('\n').map((line) => {
+    const isBlank    = line.trim() === '';
+    const isIndented = /^[ \t]/.test(line);
+
+    // A non-indented, non-blank line either opens the `author:` block or closes it.
+    if (!isBlank && !isIndented) inAuthor = /^author:[ \t]*(#.*)?$/.test(line);
+
+    if (!isIndented && /^title:/.test(line)) {
+      sawTitle = true;
+      return `title: ${yamlStr(name)}`;
+    }
+    if (inAuthor && isIndented && /^[ \t]+name:/.test(line)) {
+      sawAuthorName = true;
+      return `${line.match(/^[ \t]+/)[0]}name: ${yamlStr(name)}`;
+    }
+    return line;
+  }).join('\n');
+
+  if (!sawTitle)      console.warn('   Warning: no top-level `title:` in _config.yml — tab title not updated.');
+  if (!sawAuthorName) console.warn('   Warning: no `author.name` in _config.yml — feed author not updated.');
+
+  if (updated === original) {
+    console.log('   unchanged: _config.yml');
+    return;
+  }
+  fs.writeFileSync(configPath, updated, 'utf8');
+  console.log(`   updated: _config.yml (site title → ${name})`);
+}
+
 // ─── Parse social links text ──────────────────────────────────────────────────
 
 /**
@@ -565,6 +624,8 @@ async function syncPages() {
     } else {
       console.log('   unchanged: _data/home.yml');
     }
+
+    syncConfigIdentity(homeData.name);
   }
 
   console.log(`\n   Created: ${stats.created} | Updated: ${stats.updated} | Unchanged: ${stats.unchanged} | Errors: ${stats.errors}`);
