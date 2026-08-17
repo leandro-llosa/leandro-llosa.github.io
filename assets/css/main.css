@@ -146,7 +146,8 @@ img, video {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 58px;
+  min-height: 58px;
+  padding: var(--s-2) 0;
 }
 
 .site-logo {
@@ -162,10 +163,17 @@ img, video {
   color: var(--accent);
 }
 
+/* The nav wraps rather than running under the theme toggle when the
+   links outgrow the width — on a phone the last item used to sit
+   beneath the toggle icon. The max-width reserves the toggle's room
+   on both sides, so the nav stays centered on the page. */
 .site-nav {
   display: flex;
   align-items: center;
-  gap: var(--s-6);
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-6);
+  max-width: calc(100% - 7rem);
 }
 
 .site-nav a {
@@ -213,10 +221,19 @@ img, video {
 [data-theme="light"] .icon-sun  { display: none; }
 [data-theme="light"] .icon-moon { display: block; }
 
-/* ─── Main ───────────────────────────────────────────────────── */
+/* ─── Main ───────────────────────────────────────────────────────
+   Every layout vertically centers its content in the viewport, the
+   way the home page does. `safe center` makes tall content (a long
+   post) fall back to top-aligned so nothing is ever scrolled off
+   the top edge — short pages get centered, long pages behave.
+   ─────────────────────────────────────────────────────────────── */
 .main {
   flex: 1;
   padding: var(--s-16) 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  justify-content: safe center;
 }
 
 /* ─── Home page ──────────────────────────────────────────────────
@@ -230,8 +247,10 @@ img, video {
 
 .home-body .main {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  justify-content: safe center;
   padding: var(--s-8) 0;
 }
 
@@ -317,6 +336,7 @@ img, video {
 /* ─── Blog list header ───────────────────────────────────────── */
 .blog-header {
   margin-bottom: var(--s-8);
+  text-align: center;
 }
 
 .blog-description {
@@ -339,6 +359,7 @@ img, video {
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
+  text-align: center;
   transition: none;
 }
 
@@ -353,6 +374,7 @@ img, video {
 .post-meta {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: var(--s-3);
   margin-bottom: var(--s-2);
@@ -367,6 +389,7 @@ img, video {
 
 .post-tags {
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;
   gap: var(--s-1);
 }
@@ -416,6 +439,7 @@ img, video {
 /* ─── Post layout ────────────────────────────────────────────── */
 .post-header {
   margin-bottom: var(--s-8);
+  text-align: center;
 }
 
 .post-title {
@@ -430,6 +454,7 @@ img, video {
 .post-info {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: var(--s-4);
   color: var(--text-muted);
@@ -448,11 +473,17 @@ img, video {
   margin-bottom: var(--s-8);
 }
 
-/* ─── Post body ──────────────────────────────────────────────── */
+/* ─── Post body ──────────────────────────────────────────────────
+   Everything around an article is centered (header, meta, footer),
+   but the article body itself stays left-aligned: full posts are
+   long-form prose, and centered paragraphs are hard to read.
+   Flip this one value to `center` to center post bodies too.
+   ─────────────────────────────────────────────────────────────── */
 .post-content {
   font-size: 1rem;
   line-height: 1.8;
   color: var(--text);
+  text-align: left;
 }
 
 .post-content > * + * {
@@ -514,7 +545,7 @@ img, video {
   max-width: 100%;
   height: auto;
   border-radius: var(--radius);
-  margin: 1.5em 0;
+  margin: 1.5em auto;
   display: block;
 }
 
@@ -583,9 +614,9 @@ img, video {
 .post-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: var(--s-4);
+  gap: var(--s-6);
   margin-top: var(--s-16);
   padding-top: var(--s-8);
   border-top: 1px solid var(--border);
@@ -609,6 +640,7 @@ img, video {
 /* ─── Page layout ────────────────────────────────────────────── */
 .page-header {
   margin-bottom: var(--s-8);
+  text-align: center;
 }
 
 .page-title {
@@ -622,6 +654,7 @@ img, video {
   font-size: 1rem;
   line-height: 1.8;
   color: var(--text);
+  text-align: center;
 }
 
 .page-content > * + * {
@@ -649,15 +682,99 @@ img, video {
   text-underline-offset: 3px;
 }
 
+/* Lists lose their indent so each item centers as its own line. Bullets
+   are dropped (they pull every line off-center); numbers are kept, since
+   the number is content. The zero-width ::before keeps VoiceOver in
+   Safari announcing a bulletless <ul> as a list. */
 .page-content ul,
 .page-content ol {
-  padding-left: 1.6em;
+  padding-left: 0;
   margin: 0 0 1.25em;
+}
+
+.page-content ul {
+  list-style: none;
+}
+
+.page-content ul > li::before {
+  content: "\200B";
+}
+
+.page-content ol {
+  list-style-position: inside;
+}
+
+.page-content li {
+  margin-bottom: 0.35em;
+}
+
+.page-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* Block elements center themselves; code keeps its own left alignment
+   so indentation still reads correctly. */
+.page-content img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: var(--radius);
+}
+
+.page-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5em auto;
+  width: 100%;
+}
+
+.page-content pre,
+.page-content code {
+  text-align: left;
+}
+
+.page-content pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25em;
+  overflow-x: auto;
+  font-size: 0.875em;
+  line-height: 1.65;
+}
+
+.page-content code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+.page-content pre code {
+  background: none;
+  padding: 0;
+  font-size: 1em;
+  color: inherit;
+}
+
+.page-content blockquote {
+  margin: 1.5em 0;
+  padding: 0.8em 1.25em;
+  background: var(--code-bg);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+}
+
+.page-content blockquote p:last-child {
+  margin-bottom: 0;
 }
 
 /* ─── Tags page ──────────────────────────────────────────────── */
 .tags-header {
   margin-bottom: var(--s-12);
+  text-align: center;
 }
 
 .tags-header h1 {
@@ -673,6 +790,7 @@ img, video {
 .tag-group-name {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: var(--s-3);
   font-size: 1.05rem;
   font-weight: 700;
@@ -697,10 +815,13 @@ img, video {
 .tag-post-link {
   display: flex;
   align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: var(--s-4);
   text-decoration: none;
   color: var(--text);
   font-size: 0.95rem;
+  text-align: center;
   transition: color 0.15s ease;
 }
 
@@ -711,7 +832,6 @@ img, video {
 .tag-post-date {
   font-size: 0.8rem;
   color: var(--text-muted);
-  min-width: 95px;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -738,9 +858,10 @@ img, video {
 .footer-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: var(--s-2);
+  gap: var(--s-2) var(--s-4);
+  text-align: center;
 }
 
 .footer-inner a {
@@ -763,6 +884,19 @@ img, video {
     padding: var(--s-12) 0;
   }
 
+  .site-nav {
+    gap: var(--s-2) var(--s-3);
+    max-width: calc(100% - 5rem);
+  }
+
+  .theme-toggle {
+    right: var(--s-2);
+  }
+
+  .container {
+    padding: 0 var(--s-4);
+  }
+
   .post-title {
     font-size: 1.65rem;
   }
@@ -773,7 +907,7 @@ img, video {
 
   .post-footer {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
   }
 }
 
