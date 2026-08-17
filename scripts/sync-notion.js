@@ -11,6 +11,9 @@
  *   NOTION_PAGES_DATABASE_ID   — ID of the pages/sections database (optional)
  *   NOTION_POSTS_DATABASE_ID   — ID of the blog posts database (optional)
  *   NOTION_DATABASE_ID         — Legacy fallback for posts database
+ *   ALLOW_BULK_DELETE          — Set to "true" to bypass the bulk-delete guard
+ *   MAX_DELETE_RATIO           — Fraction of tracked files a single sync may
+ *                                delete before the guard trips (default 0.5)
  *
  * At least one of NOTION_PAGES_DATABASE_ID or NOTION_POSTS_DATABASE_ID
  * (/ NOTION_DATABASE_ID) must be set.
@@ -27,6 +30,8 @@ const path = require('path');
 const NOTION_TOKEN      = process.env.NOTION_TOKEN;
 const PAGES_DB_ID       = process.env.NOTION_PAGES_DATABASE_ID;
 const POSTS_DB_ID       = process.env.NOTION_POSTS_DATABASE_ID || process.env.NOTION_DATABASE_ID;
+const ALLOW_BULK_DELETE = process.env.ALLOW_BULK_DELETE === 'true';
+const MAX_DELETE_RATIO  = Number(process.env.MAX_DELETE_RATIO) || 0.5;
 
 if (!NOTION_TOKEN) {
   console.error('Error: NOTION_TOKEN environment variable is not set.');
@@ -219,6 +224,63 @@ function titleToSlug(title) {
 function yamlStr(value) {
   return JSON.stringify(String(value ?? ''));
 }
+
+// ─── Deletion guard ───────────────────────────────────────────────────────────
+
+/**
+ * Delete the files whose Notion pages came back unpublished — but refuse to do
+ * it when the query result looks like a bad read rather than a real edit.
+ *
+ * A dropped Status option, a revoked integration share or a partial API
+ * response all look identical to "the author unpublished everything", and the
+ * sync commits straight to master, so an unguarded delete can wipe the live
+ * site without anyone touching Notion. Abort loudly instead; the workflow's
+ * commit step never runs, so the repo is left untouched.
+ *
+ * Set ALLOW_BULK_DELETE=true to push a genuine mass unpublish through.
+ */
+function applyDeletions(dir, label, notionIdToFile, processedIds) {
+  const stale = [...notionIdToFile].filter(([id]) => !processedIds.has(id));
+  if (stale.length === 0) return;
+
+  const tracked = notionIdToFile.size;
+  const ratio   = stale.length / tracked;
+
+  // A single deletion is always allowed: it is the ordinary "I unpublished one
+  // thing" case, and it cannot take the site down on its own.
+  const suspicious = processedIds.size === 0 ||
+                     (stale.length > 1 && ratio > MAX_DELETE_RATIO);
+
+  if (suspicious && !ALLOW_BULK_DELETE) {
+    console.error(
+      `\n   ABORT: this sync would delete ${stale.length} of ${tracked} tracked ${label} ` +
+      `(${Math.round(ratio * 100)}%).\n` +
+      `   Notion returned ${processedIds.size} published row(s), which usually means the\n` +
+      `   database was misread — a renamed Status option, a revoked integration share,\n` +
+      `   or a partial API response — not that you unpublished them.\n\n` +
+      `   Would have deleted:\n` +
+      stale.map(([, f]) => `     - ${f}`).join('\n') + '\n\n' +
+      `   Nothing was changed. Check the database in Notion. If the deletion is real,\n` +
+      `   re-run this workflow with ALLOW_BULK_DELETE=true.`
+    );
+    throw new Error(`bulk-delete guard tripped for ${label}`);
+  }
+
+  if (suspicious) {
+    console.log(`\n   ALLOW_BULK_DELETE set — deleting ${stale.length} of ${tracked} ${label}.`);
+  }
+
+  for (const [, filename] of stale) {
+    try {
+      fs.unlinkSync(path.join(dir, filename));
+      console.log(`\n   removed (unpublished): ${filename}`);
+    } catch {
+      console.warn(`   Warning: could not remove ${filename}`);
+    }
+  }
+}
+
+// ─── YAML helpers (cont.) ─────────────────────────────────────────────────────
 
 /** Write a YAML list of nav items. */
 function buildNavYaml(items) {
@@ -478,16 +540,7 @@ async function syncPages() {
   }
 
   // Remove pages no longer published
-  for (const [notionId, filename] of notionIdToFile) {
-    if (!processedIds.has(notionId)) {
-      try {
-        fs.unlinkSync(path.join(PAGES_DIR, filename));
-        console.log(`\n   removed (unpublished): _pages/${filename}`);
-      } catch {
-        console.warn(`   Warning: could not remove _pages/${filename}`);
-      }
-    }
-  }
+  applyDeletions(PAGES_DIR, 'pages', notionIdToFile, processedIds);
 
   // Write _data/nav.yml
   navItems.sort((a, b) => a.order - b.order);
@@ -653,16 +706,7 @@ async function syncPosts() {
   }
 
   // Remove unpublished posts
-  for (const [notionId, filename] of notionIdToFile) {
-    if (!processedIds.has(notionId)) {
-      try {
-        fs.unlinkSync(path.join(POSTS_DIR, filename));
-        console.log(`\n   removed (unpublished): ${filename}`);
-      } catch {
-        console.warn(`   Warning: could not remove ${filename}`);
-      }
-    }
-  }
+  applyDeletions(POSTS_DIR, 'posts', notionIdToFile, processedIds);
 
   console.log(`\n   Created: ${stats.created} | Updated: ${stats.updated} | Unchanged: ${stats.unchanged} | Errors: ${stats.errors}`);
   return stats.errors;

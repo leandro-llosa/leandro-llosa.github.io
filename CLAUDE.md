@@ -152,7 +152,9 @@ Layout: `.site-header`, `.header-inner`, `.site-logo`, `.site-nav`, `.main`, `.c
 3. For each page: extracts metadata, fetches blocks, converts to Markdown
 4. If `type === 'home'`: accumulates profile data, writes `_data/home.yml`
 5. Otherwise: writes `_pages/{slug}.md` with appropriate layout front matter
-6. Removes `_pages/*.md` files whose Notion pages are no longer Published
+6. Removes `_pages/*.md` files whose Notion pages are no longer Published — via
+   `applyDeletions()`, which aborts the whole sync (exit 1, nothing committed) if the
+   deletion looks like a bad read rather than a real edit
 7. Writes `_data/nav.yml` from pages with `showInNav: true`, sorted by `navOrder`
 
 **Posts sync (`syncPosts()`):** Same pattern as pages, but writes to `_posts/{date}-{slug}.md` with post-specific front matter.
@@ -239,3 +241,9 @@ Jekyll serves at `http://localhost:4000` by default.
 - **Notion image URLs expire** — always use external URLs for profile pictures and cover images. Warn users in docs.
 - **`_pages/` and `_posts/` are managed by sync** — never edit these manually; changes will be overwritten.
 - **`_data/home.yml` and `_data/nav.yml` are managed by sync** — same rule.
+- **The sync refuses suspicious bulk deletes** — if a run would delete more than
+  `MAX_DELETE_RATIO` (default 0.5) of the tracked files in `_pages/` or `_posts/`, or if
+  Notion returns zero published rows, the sync aborts with exit 1 and commits nothing.
+  A dropped `Status` option or a revoked integration share is indistinguishable from a
+  real unpublish, and this sync pushes straight to master. To push a genuine mass
+  unpublish through, re-run with `ALLOW_BULK_DELETE=true`.

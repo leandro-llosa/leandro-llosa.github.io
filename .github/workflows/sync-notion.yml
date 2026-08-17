@@ -7,6 +7,13 @@ on:
 
   # Allow triggering the sync manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      allow_bulk_delete:
+        description: >-
+          Let this run delete most of _pages/ and _posts/. Only tick this when you
+          really did unpublish that much in Notion — otherwise the sync aborts.
+        type: boolean
+        default: false
 
 jobs:
   sync:
@@ -42,6 +49,8 @@ jobs:
           NOTION_POSTS_DATABASE_ID: ${{ secrets.NOTION_POSTS_DATABASE_ID }}
           # Legacy fallback — kept for repos that only have a posts database
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          # Empty on scheduled runs, so the guard is always on unless asked otherwise
+          ALLOW_BULK_DELETE: ${{ inputs.allow_bulk_delete }}
         run: node scripts/sync-notion.js
 
       # ── 5. Commit changes ─────────────────────────────────────────────────
