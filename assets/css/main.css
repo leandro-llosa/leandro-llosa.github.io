@@ -19,9 +19,9 @@
   --tag-bg:          #f4f4f5;
 
   /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Menlo, Monaco, Consolas,
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Space Mono", "SFMono-Regular", Menlo, Monaco, Consolas,
                "Liberation Mono", "Courier New", monospace;
 
   /* Layout */
@@ -295,22 +295,26 @@ img, video {
   }
 }
 
+/* Space Mono runs wider than the display face it replaced, so the clamp
+   maximum comes down and the tracking tightens — without the negative
+   letter-spacing a mono name reads as spaced-out rather than set. */
 .home-name {
-  font-family: 'Quicksand', var(--font-sans);
-  font-size: clamp(1.75rem, 6vw, 2.5rem);
+  font-family: var(--font-mono);
+  font-size: clamp(1.6rem, 5.5vw, 2.25rem);
   font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.1;
+  letter-spacing: -0.045em;
   margin: 0 0 1rem;
   color: var(--text);
 }
 
 .home-tagline {
-  font-size: 1.1rem;
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
   color: var(--text-secondary);
   max-width: 28rem;
   margin: 0 0 2.5rem;
-  line-height: 1.65;
+  line-height: 1.7;
 }
 
 /* ─── Social icons (inside the content block) ────────────────── */
@@ -381,6 +385,7 @@ img, video {
 }
 
 .post-date {
+  font-family: var(--font-mono);
   font-size: 0.82rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
@@ -396,6 +401,7 @@ img, video {
 
 .tag {
   display: inline-block;
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 500;
   padding: 2px 9px;
@@ -462,6 +468,7 @@ img, video {
 }
 
 .post-info time {
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
@@ -644,14 +651,16 @@ img, video {
 }
 
 .page-title {
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-family: var(--font-mono);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
   color: var(--text);
 }
 
 .page-content {
-  font-size: 1rem;
+  font-family: var(--font-sans);
+  font-size: 1.06rem;
   line-height: 1.8;
   color: var(--text);
   text-align: center;
@@ -663,8 +672,9 @@ img, video {
 
 .page-content h2,
 .page-content h3 {
+  font-family: var(--font-mono);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   margin-top: 2em;
   margin-bottom: 0.5em;
 }
@@ -830,6 +840,7 @@ img, video {
 }
 
 .tag-post-date {
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--text-muted);
   flex-shrink: 0;
@@ -851,7 +862,8 @@ img, video {
 .site-footer {
   border-top: 1px solid var(--border);
   padding: var(--s-6) 0;
-  font-size: 0.83rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
